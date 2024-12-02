@@ -44,17 +44,17 @@ def heur_block_n(args):
 
 
 @libentry()
-@triton.autotune(
-    configs=[
-        triton.Config({"BLOCK_M": 8, "BLOCK_N": 256}, num_warps=8),
-        triton.Config({"BLOCK_M": 16, "BLOCK_N": 512}, num_warps=8),
-        triton.Config({"BLOCK_M": 32, "BLOCK_N": 512}, num_warps=8),
-    ],
-    key=[
-        "M",
-        "N",
-    ],
-)
+# @triton.autotune(
+#     configs=[
+#         triton.Config({"BLOCK_M": 8, "BLOCK_N": 256}, num_warps=8),
+#         triton.Config({"BLOCK_M": 16, "BLOCK_N": 512}, num_warps=8),
+#         triton.Config({"BLOCK_M": 32, "BLOCK_N": 512}, num_warps=8),
+#     ],
+#     key=[
+#         "M",
+#         "N",
+#     ],
+# )
 @triton.jit
 def max_kernel(
     inp,
@@ -63,8 +63,8 @@ def max_kernel(
     M,
     N,
     K,
-    BLOCK_M: tl.constexpr,
-    BLOCK_N: tl.constexpr,
+    BLOCK_M: tl.constexpr = 16,
+    BLOCK_N: tl.constexpr = 512,
 ):
     # set offset
     pid_m = tle.program_id(0)

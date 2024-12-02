@@ -13,108 +13,108 @@ def heur_even_k(args):
 
 
 @libentry()
-@triton.autotune(
-    configs=[
-        # basic configs for compute-bound matmuls
-        triton.Config(
-            {"BLOCK_M": 128, "BLOCK_N": 256, "BLOCK_K": 32, "SPLIT_K": 1},
-            num_stages=3,
-            num_warps=8,
-        ),
-        triton.Config(
-            {"BLOCK_M": 256, "BLOCK_N": 128, "BLOCK_K": 32, "SPLIT_K": 1},
-            num_stages=3,
-            num_warps=8,
-        ),
-        triton.Config(
-            {"BLOCK_M": 256, "BLOCK_N": 64, "BLOCK_K": 32, "SPLIT_K": 1},
-            num_stages=4,
-            num_warps=4,
-        ),
-        triton.Config(
-            {"BLOCK_M": 64, "BLOCK_N": 256, "BLOCK_K": 32, "SPLIT_K": 1},
-            num_stages=4,
-            num_warps=4,
-        ),
-        triton.Config(
-            {"BLOCK_M": 128, "BLOCK_N": 128, "BLOCK_K": 32, "SPLIT_K": 1},
-            num_stages=4,
-            num_warps=4,
-        ),
-        triton.Config(
-            {"BLOCK_M": 128, "BLOCK_N": 64, "BLOCK_K": 32, "SPLIT_K": 1},
-            num_stages=4,
-            num_warps=4,
-        ),
-        triton.Config(
-            {"BLOCK_M": 64, "BLOCK_N": 128, "BLOCK_K": 32, "SPLIT_K": 1},
-            num_stages=4,
-            num_warps=4,
-        ),
-        triton.Config(
-            {"BLOCK_M": 128, "BLOCK_N": 32, "BLOCK_K": 32, "SPLIT_K": 1},
-            num_stages=4,
-            num_warps=4,
-        ),
-        triton.Config(
-            {"BLOCK_M": 64, "BLOCK_N": 32, "BLOCK_K": 32, "SPLIT_K": 1},
-            num_stages=5,
-            num_warps=2,
-        ),
-        # good for int8
-        triton.Config(
-            {"BLOCK_M": 128, "BLOCK_N": 256, "BLOCK_K": 128, "SPLIT_K": 1},
-            num_stages=3,
-            num_warps=8,
-        ),
-        triton.Config(
-            {"BLOCK_M": 256, "BLOCK_N": 128, "BLOCK_K": 128, "SPLIT_K": 1},
-            num_stages=3,
-            num_warps=8,
-        ),
-        triton.Config(
-            {"BLOCK_M": 256, "BLOCK_N": 64, "BLOCK_K": 128, "SPLIT_K": 1},
-            num_stages=4,
-            num_warps=4,
-        ),
-        triton.Config(
-            {"BLOCK_M": 64, "BLOCK_N": 256, "BLOCK_K": 128, "SPLIT_K": 1},
-            num_stages=4,
-            num_warps=4,
-        ),
-        triton.Config(
-            {"BLOCK_M": 128, "BLOCK_N": 128, "BLOCK_K": 128, "SPLIT_K": 1},
-            num_stages=4,
-            num_warps=4,
-        ),
-        triton.Config(
-            {"BLOCK_M": 128, "BLOCK_N": 64, "BLOCK_K": 64, "SPLIT_K": 1},
-            num_stages=4,
-            num_warps=4,
-        ),
-        triton.Config(
-            {"BLOCK_M": 64, "BLOCK_N": 128, "BLOCK_K": 64, "SPLIT_K": 1},
-            num_stages=4,
-            num_warps=4,
-        ),
-        triton.Config(
-            {"BLOCK_M": 128, "BLOCK_N": 32, "BLOCK_K": 64, "SPLIT_K": 1},
-            num_stages=4,
-            num_warps=4,
-        ),
-        triton.Config(
-            {"BLOCK_M": 64, "BLOCK_N": 32, "BLOCK_K": 64, "SPLIT_K": 1},
-            num_stages=5,
-            num_warps=2,
-        ),
-    ],
-    key=["M", "N", "K"],
-)
-@triton.heuristics(
-    {
-        "EVEN_K": heur_even_k,
-    }
-)
+# @triton.autotune(
+#     configs=[
+#         # basic configs for compute-bound matmuls
+#         triton.Config(
+#             {"BLOCK_M": 128, "BLOCK_N": 256, "BLOCK_K": 32, "SPLIT_K": 1},
+#             num_stages=3,
+#             num_warps=8,
+#         ),
+#         triton.Config(
+#             {"BLOCK_M": 256, "BLOCK_N": 128, "BLOCK_K": 32, "SPLIT_K": 1},
+#             num_stages=3,
+#             num_warps=8,
+#         ),
+#         triton.Config(
+#             {"BLOCK_M": 256, "BLOCK_N": 64, "BLOCK_K": 32, "SPLIT_K": 1},
+#             num_stages=4,
+#             num_warps=4,
+#         ),
+#         triton.Config(
+#             {"BLOCK_M": 64, "BLOCK_N": 256, "BLOCK_K": 32, "SPLIT_K": 1},
+#             num_stages=4,
+#             num_warps=4,
+#         ),
+#         triton.Config(
+#             {"BLOCK_M": 128, "BLOCK_N": 128, "BLOCK_K": 32, "SPLIT_K": 1},
+#             num_stages=4,
+#             num_warps=4,
+#         ),
+#         triton.Config(
+#             {"BLOCK_M": 128, "BLOCK_N": 64, "BLOCK_K": 32, "SPLIT_K": 1},
+#             num_stages=4,
+#             num_warps=4,
+#         ),
+#         triton.Config(
+#             {"BLOCK_M": 64, "BLOCK_N": 128, "BLOCK_K": 32, "SPLIT_K": 1},
+#             num_stages=4,
+#             num_warps=4,
+#         ),
+#         triton.Config(
+#             {"BLOCK_M": 128, "BLOCK_N": 32, "BLOCK_K": 32, "SPLIT_K": 1},
+#             num_stages=4,
+#             num_warps=4,
+#         ),
+#         triton.Config(
+#             {"BLOCK_M": 64, "BLOCK_N": 32, "BLOCK_K": 32, "SPLIT_K": 1},
+#             num_stages=5,
+#             num_warps=2,
+#         ),
+#         # good for int8
+#         triton.Config(
+#             {"BLOCK_M": 128, "BLOCK_N": 256, "BLOCK_K": 128, "SPLIT_K": 1},
+#             num_stages=3,
+#             num_warps=8,
+#         ),
+#         triton.Config(
+#             {"BLOCK_M": 256, "BLOCK_N": 128, "BLOCK_K": 128, "SPLIT_K": 1},
+#             num_stages=3,
+#             num_warps=8,
+#         ),
+#         triton.Config(
+#             {"BLOCK_M": 256, "BLOCK_N": 64, "BLOCK_K": 128, "SPLIT_K": 1},
+#             num_stages=4,
+#             num_warps=4,
+#         ),
+#         triton.Config(
+#             {"BLOCK_M": 64, "BLOCK_N": 256, "BLOCK_K": 128, "SPLIT_K": 1},
+#             num_stages=4,
+#             num_warps=4,
+#         ),
+#         triton.Config(
+#             {"BLOCK_M": 128, "BLOCK_N": 128, "BLOCK_K": 128, "SPLIT_K": 1},
+#             num_stages=4,
+#             num_warps=4,
+#         ),
+#         triton.Config(
+#             {"BLOCK_M": 128, "BLOCK_N": 64, "BLOCK_K": 64, "SPLIT_K": 1},
+#             num_stages=4,
+#             num_warps=4,
+#         ),
+#         triton.Config(
+#             {"BLOCK_M": 64, "BLOCK_N": 128, "BLOCK_K": 64, "SPLIT_K": 1},
+#             num_stages=4,
+#             num_warps=4,
+#         ),
+#         triton.Config(
+#             {"BLOCK_M": 128, "BLOCK_N": 32, "BLOCK_K": 64, "SPLIT_K": 1},
+#             num_stages=4,
+#             num_warps=4,
+#         ),
+#         triton.Config(
+#             {"BLOCK_M": 64, "BLOCK_N": 32, "BLOCK_K": 64, "SPLIT_K": 1},
+#             num_stages=5,
+#             num_warps=2,
+#         ),
+#     ],
+#     key=["M", "N", "K"],
+# )
+# @triton.heuristics(
+#     {
+#         "EVEN_K": heur_even_k,
+#     }
+# )
 @triton.jit
 def mm_kernel(
     A,
@@ -130,12 +130,12 @@ def mm_kernel(
     stride_cm,
     stride_cn,
     dot_out_dtype: tl.constexpr,
-    BLOCK_M: tl.constexpr,
-    BLOCK_N: tl.constexpr,
-    BLOCK_K: tl.constexpr,
-    GROUP_M: tl.constexpr,
-    SPLIT_K: tl.constexpr,
-    EVEN_K: tl.constexpr,
+    BLOCK_M: tl.constexpr = 128,
+    BLOCK_N: tl.constexpr = 128,
+    BLOCK_K: tl.constexpr = 128,
+    GROUP_M: tl.constexpr = 8,
+    SPLIT_K: tl.constexpr = 1,
+    EVEN_K: tl.constexpr = True,
 ):
     # matrix multiplication
     pid = tle.program_id(0)
@@ -224,6 +224,7 @@ def mm(a, b):
         triton.cdiv(M, META["BLOCK_M"]) * triton.cdiv(N, META["BLOCK_N"]),
         META["SPLIT_K"],
     )
+    EVEN_K = K % (128 * 1) == 0
     with torch.cuda.device(a.device):
         mm_kernel[grid](
             a,
@@ -240,5 +241,6 @@ def mm(a, b):
             c.stride(1),
             dot_out_dtype=dot_out_dtype,
             GROUP_M=8,
+            EVEN_K=EVEN_K,
         )
     return c

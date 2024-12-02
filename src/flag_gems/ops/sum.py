@@ -62,15 +62,15 @@ def cfggen():
 
 
 @libentry()
-@triton.autotune(configs=cfggen(), key=["M", "N"])
+# @triton.autotune(configs=cfggen(), key=["M", "N"])
 @triton.jit
 def sum_kernel(
     inp,
     out,
     M,
     N,
-    BLOCK_M: tl.constexpr,
-    BLOCK_N: tl.constexpr,
+    BLOCK_M: tl.constexpr = 4,
+    BLOCK_N: tl.constexpr = 1024,
 ):
     if tl.constexpr(inp.dtype.element_ty == tl.float16) or tl.constexpr(
         inp.dtype.element_ty == tl.bfloat16

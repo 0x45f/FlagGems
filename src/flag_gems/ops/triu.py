@@ -27,7 +27,7 @@ def cfggen_batch():
 
 
 @libentry()
-@triton.autotune(configs=cfggen(), key=["M", "N"])
+# @triton.autotune(configs=cfggen(), key=["M", "N"])
 @triton.jit(do_not_specialize=["diagonal"])
 def triu_kernel(
     X,
@@ -35,8 +35,8 @@ def triu_kernel(
     M,
     N,
     diagonal,
-    M_BLOCK_SIZE: tl.constexpr,
-    N_BLOCK_SIZE: tl.constexpr,
+    M_BLOCK_SIZE: tl.constexpr = 1,
+    N_BLOCK_SIZE: tl.constexpr = 2048,
 ):
     pid = tle.program_id(0)
     row = pid * M_BLOCK_SIZE + tl.arange(0, M_BLOCK_SIZE)[:, None]
@@ -55,7 +55,7 @@ def triu_kernel(
 
 
 @libentry()
-@triton.autotune(configs=cfggen_batch(), key=["batch", "MN", "N", "diagonal"])
+# @triton.autotune(configs=cfggen_batch(), key=["batch", "MN", "N", "diagonal"])
 @triton.jit(do_not_specialize=["diagonal"])
 def triu_batch_kernel(
     X,
@@ -64,8 +64,8 @@ def triu_batch_kernel(
     MN,
     N,
     diagonal,
-    BATCH_BLOCK_SIZE: tl.constexpr,
-    MN_BLOCK_SIZE: tl.constexpr,
+    BATCH_BLOCK_SIZE: tl.constexpr = 1,
+    MN_BLOCK_SIZE: tl.constexpr = 512,
 ):
     batch_id = tle.program_id(0)
     mn_id = tle.program_id(1)

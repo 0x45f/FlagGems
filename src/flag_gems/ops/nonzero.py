@@ -9,16 +9,16 @@ from ..utils import triton_lang_extension as tle
 
 
 @libentry()
-@triton.autotune(
-    configs=[
-        triton.Config({"BLOCK_SIZE": k}, num_warps=w, num_stages=4)
-        for w in [4, 8, 16, 32]
-        for k in [256, 512, 1024, 2048, 4096, 8192]
-    ],
-    key=[
-        "n_elements",
-    ],
-)
+# @triton.autotune(
+#     configs=[
+#         triton.Config({"BLOCK_SIZE": k}, num_warps=w, num_stages=4)
+#         for w in [4, 8, 16, 32]
+#         for k in [256, 512, 1024, 2048, 4096, 8192]
+#     ],
+#     key=[
+#         "n_elements",
+#     ],
+# )
 @triton.jit
 def nonzero_kernel(
     inp,
@@ -27,7 +27,7 @@ def nonzero_kernel(
     n_elements,
     shape,
     ndim: tl.constexpr,
-    BLOCK_SIZE: tl.constexpr,
+    BLOCK_SIZE: tl.constexpr = 16,
 ):
     pid = tle.program_id(0)
 

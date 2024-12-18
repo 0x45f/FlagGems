@@ -9,83 +9,83 @@ from ..utils import triton_lang_extension as tle
 
 
 def heur_divisible_m(args):
-    return args["M"] % args["TILE_M"] == 0
+    return args["M"] % 64 == 0
 
 
 def heur_divisible_n(args):
-    return args["N"] % args["TILE_N"] == 0
+    return args["N"] % 64 == 0
 
 
 def heur_divisible_k(args):
-    return args["K"] % args["TILE_K"] == 0
+    return args["K"] % 32 == 0
 
 
 @libentry()
-@triton.autotune(
-    configs=[
-        triton.Config(
-            {"TILE_M": 32, "TILE_N": 32, "TILE_K": 32, "GROUP_M": 1},
-            num_warps=4,
-            num_stages=2,
-        ),
-        triton.Config(
-            {"TILE_M": 64, "TILE_N": 32, "TILE_K": 32, "GROUP_M": 2},
-            num_warps=4,
-            num_stages=2,
-        ),
-        triton.Config(
-            {"TILE_M": 64, "TILE_N": 64, "TILE_K": 32, "GROUP_M": 2},
-            num_warps=4,
-            num_stages=2,
-        ),
-        triton.Config(
-            {"TILE_M": 128, "TILE_N": 32, "TILE_K": 32, "GROUP_M": 2},
-            num_warps=4,
-            num_stages=2,
-        ),
-        triton.Config(
-            {"TILE_M": 128, "TILE_N": 64, "TILE_K": 32, "GROUP_M": 2},
-            num_warps=4,
-            num_stages=2,
-        ),
-        triton.Config(
-            {"TILE_M": 128, "TILE_N": 128, "TILE_K": 32, "GROUP_M": 2},
-            num_warps=4,
-            num_stages=2,
-        ),
-        triton.Config(
-            {"TILE_M": 32, "TILE_N": 32, "TILE_K": 32, "GROUP_M": 1},
-            num_warps=4,
-            num_stages=3,
-        ),
-        triton.Config(
-            {"TILE_M": 64, "TILE_N": 32, "TILE_K": 32, "GROUP_M": 2},
-            num_warps=4,
-            num_stages=3,
-        ),
-        triton.Config(
-            {"TILE_M": 64, "TILE_N": 64, "TILE_K": 32, "GROUP_M": 2},
-            num_warps=4,
-            num_stages=3,
-        ),
-        triton.Config(
-            {"TILE_M": 128, "TILE_N": 32, "TILE_K": 32, "GROUP_M": 2},
-            num_warps=4,
-            num_stages=3,
-        ),
-        triton.Config(
-            {"TILE_M": 128, "TILE_N": 64, "TILE_K": 32, "GROUP_M": 2},
-            num_warps=4,
-            num_stages=3,
-        ),
-        triton.Config(
-            {"TILE_M": 128, "TILE_N": 128, "TILE_K": 32, "GROUP_M": 2},
-            num_warps=4,
-            num_stages=3,
-        ),
-    ],
-    key=["M", "N", "K"],
-)
+# @triton.autotune(
+#     configs=[
+#         triton.Config(
+#             {"TILE_M": 32, "TILE_N": 32, "TILE_K": 32, "GROUP_M": 1},
+#             num_warps=4,
+#             num_stages=2,
+#         ),
+#         triton.Config(
+#             {"TILE_M": 64, "TILE_N": 32, "TILE_K": 32, "GROUP_M": 2},
+#             num_warps=4,
+#             num_stages=2,
+#         ),
+#         triton.Config(
+#             {"TILE_M": 64, "TILE_N": 64, "TILE_K": 32, "GROUP_M": 2},
+#             num_warps=4,
+#             num_stages=2,
+#         ),
+#         triton.Config(
+#             {"TILE_M": 128, "TILE_N": 32, "TILE_K": 32, "GROUP_M": 2},
+#             num_warps=4,
+#             num_stages=2,
+#         ),
+#         triton.Config(
+#             {"TILE_M": 128, "TILE_N": 64, "TILE_K": 32, "GROUP_M": 2},
+#             num_warps=4,
+#             num_stages=2,
+#         ),
+#         triton.Config(
+#             {"TILE_M": 128, "TILE_N": 128, "TILE_K": 32, "GROUP_M": 2},
+#             num_warps=4,
+#             num_stages=2,
+#         ),
+#         triton.Config(
+#             {"TILE_M": 32, "TILE_N": 32, "TILE_K": 32, "GROUP_M": 1},
+#             num_warps=4,
+#             num_stages=3,
+#         ),
+#         triton.Config(
+#             {"TILE_M": 64, "TILE_N": 32, "TILE_K": 32, "GROUP_M": 2},
+#             num_warps=4,
+#             num_stages=3,
+#         ),
+#         triton.Config(
+#             {"TILE_M": 64, "TILE_N": 64, "TILE_K": 32, "GROUP_M": 2},
+#             num_warps=4,
+#             num_stages=3,
+#         ),
+#         triton.Config(
+#             {"TILE_M": 128, "TILE_N": 32, "TILE_K": 32, "GROUP_M": 2},
+#             num_warps=4,
+#             num_stages=3,
+#         ),
+#         triton.Config(
+#             {"TILE_M": 128, "TILE_N": 64, "TILE_K": 32, "GROUP_M": 2},
+#             num_warps=4,
+#             num_stages=3,
+#         ),
+#         triton.Config(
+#             {"TILE_M": 128, "TILE_N": 128, "TILE_K": 32, "GROUP_M": 2},
+#             num_warps=4,
+#             num_stages=3,
+#         ),
+#     ],
+#     key=["M", "N", "K"],
+# )
 @triton.heuristics(
     {
         "DIVISIBLE_M": heur_divisible_m,
@@ -101,13 +101,13 @@ def bmm_kernel(
     M,
     N,
     K,
-    TILE_M: tl.constexpr,
-    TILE_N: tl.constexpr,
-    TILE_K: tl.constexpr,
-    GROUP_M: tl.constexpr,
-    DIVISIBLE_M: tl.constexpr,
-    DIVISIBLE_N: tl.constexpr,
-    DIVISIBLE_K: tl.constexpr,
+    TILE_M: tl.constexpr = 64,
+    TILE_N: tl.constexpr = 64,
+    TILE_K: tl.constexpr = 32,
+    GROUP_M: tl.constexpr = 2,
+    DIVISIBLE_M: tl.constexpr = True,
+    DIVISIBLE_N: tl.constexpr = True,
+    DIVISIBLE_K: tl.constexpr = True,
 ):
     # batch offsets
     pid_b = tle.program_id(2)

@@ -18,9 +18,9 @@ def cfggen():
 
 
 @libentry()
-@triton.autotune(configs=cfggen(), key=["N"])
+# @triton.autotune(configs=cfggen(), key=["N"])
 @triton.jit
-def masked_fill_kernel(inp, expand_mask, value, out, N, BLOCK_SIZE: tl.constexpr):
+def masked_fill_kernel(inp, expand_mask, value, out, N, BLOCK_SIZE: tl.constexpr = 2048):
     pid = tle.program_id(axis=0)
     offsets = pid * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
     mask = offsets < N
@@ -32,9 +32,9 @@ def masked_fill_kernel(inp, expand_mask, value, out, N, BLOCK_SIZE: tl.constexpr
 
 
 @libentry()
-@triton.autotune(configs=cfggen(), key=["N"])
+# @triton.autotune(configs=cfggen(), key=["N"])
 @triton.jit
-def masked_fill_kernel_self(inp, expand_mask, value, N, BLOCK_SIZE: tl.constexpr):
+def masked_fill_kernel_self(inp, expand_mask, value, N, BLOCK_SIZE: tl.constexpr = 2048):
     pid = tle.program_id(axis=0)
     offsets = pid * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
     mask = offsets < N

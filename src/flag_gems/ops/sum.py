@@ -104,164 +104,164 @@ def sum_kernel(
     tl.store(out, sum, row_mask)
 
 
-@triton.jit
-def sum_dim1_kernel(
-    input_ptr,
-    output_ptr,
-    # 张量元数据
-    seq_len, num_heads, feat_dim,
-    # 内存布局信息
-    input_stride_seq, input_stride_head, input_stride_feat,
-    output_stride_seq, output_stride_feat,
-    # 内核配置
-    BLOCK_SEQ: tl.constexpr,
-    BLOCK_FEAT: tl.constexpr,
-    DTYPE: tl.constexpr
-):
-    # 计算程序ID
-    pid_seq = tl.program_id(0)
-    pid_feat = tl.program_id(1)
+# @triton.jit
+# def sum_dim1_kernel(
+#     input_ptr,
+#     output_ptr,
+#     # 张量元数据
+#     seq_len, num_heads, feat_dim,
+#     # 内存布局信息
+#     input_stride_seq, input_stride_head, input_stride_feat,
+#     output_stride_seq, output_stride_feat,
+#     # 内核配置
+#     BLOCK_SEQ: tl.constexpr,
+#     BLOCK_FEAT: tl.constexpr,
+#     DTYPE: tl.constexpr
+# ):
+#     # 计算程序ID
+#     pid_seq = tl.program_id(0)
+#     pid_feat = tl.program_id(1)
     
-    # 计算序列和特征维度的起始索引
-    seq_start = pid_seq * BLOCK_SEQ
-    feat_start = pid_feat * BLOCK_FEAT
+#     # 计算序列和特征维度的起始索引
+#     seq_start = pid_seq * BLOCK_SEQ
+#     feat_start = pid_feat * BLOCK_FEAT
     
-    # 创建序列和特征维度的偏移量
-    seq_offsets = seq_start + tl.arange(0, BLOCK_SEQ)
-    feat_offsets = feat_start + tl.arange(0, BLOCK_FEAT)
+#     # 创建序列和特征维度的偏移量
+#     seq_offsets = seq_start + tl.arange(0, BLOCK_SEQ)
+#     feat_offsets = feat_start + tl.arange(0, BLOCK_FEAT)
     
-    # 创建掩码，处理边界
-    seq_mask = seq_offsets < seq_len
-    feat_mask = feat_offsets < feat_dim
+#     # 创建掩码，处理边界
+#     seq_mask = seq_offsets < seq_len
+#     feat_mask = feat_offsets < feat_dim
     
-    # 初始化累加器 - 为每个(序列,特征)位置创建
-    accumulator = tl.zeros((BLOCK_SEQ, BLOCK_FEAT), dtype=DTYPE)
+#     # 初始化累加器 - 为每个(序列,特征)位置创建
+#     accumulator = tl.zeros((BLOCK_SEQ, BLOCK_FEAT), dtype=DTYPE)
     
-    # 遍历注意力头维度(维度1)
-    for head_idx in range(0, num_heads):
-        # 计算输入内存偏移量
-        input_offsets = (
-            seq_offsets[:, None] * input_stride_seq + 
-            head_idx * input_stride_head + 
-            feat_offsets[None, :] * input_stride_feat
-        )
+#     # 遍历注意力头维度(维度1)
+#     for head_idx in range(0, num_heads):
+#         # 计算输入内存偏移量
+#         input_offsets = (
+#             seq_offsets[:, None] * input_stride_seq + 
+#             head_idx * input_stride_head + 
+#             feat_offsets[None, :] * input_stride_feat
+#         )
         
-        # 加载数据块
-        block = tl.load(
-            input_ptr + input_offsets,
-            mask=seq_mask[:, None] & feat_mask[None, :],
-            other=0.0
-        )
+#         # 加载数据块
+#         block = tl.load(
+#             input_ptr + input_offsets,
+#             mask=seq_mask[:, None] & feat_mask[None, :],
+#             other=0.0
+#         )
         
-        # 累加到累加器
-        accumulator += block
+#         # 累加到累加器
+#         accumulator += block
     
-    # 计算输出内存偏移量
-    output_offsets = (
-        seq_offsets[:, None] * output_stride_seq + 
-        feat_offsets[None, :] * output_stride_feat
-    )
+#     # 计算输出内存偏移量
+#     output_offsets = (
+#         seq_offsets[:, None] * output_stride_seq + 
+#         feat_offsets[None, :] * output_stride_feat
+#     )
     
-    # 存储结果
-    tl.store(
-        output_ptr + output_offsets,
-        accumulator,
-        mask=seq_mask[:, None] & feat_mask[None, :]
-    )
+#     # 存储结果
+#     tl.store(
+#         output_ptr + output_offsets,
+#         accumulator,
+#         mask=seq_mask[:, None] & feat_mask[None, :]
+#     )
 
 
-def sum_dim(
-    input: torch.Tensor,
-    dim = None,
-    keepdim: bool = False, 
-    *,
-    dtype = None,
-) -> torch.Tensor:
-    """
-    针对[seq_len, num_heads, feat_dim]形状优化的维度1求和
+# def sum_dim(
+#     input: torch.Tensor,
+#     dim = None,
+#     keepdim: bool = False, 
+#     *,
+#     dtype = None,
+# ) -> torch.Tensor:
+#     """
+#     针对[seq_len, num_heads, feat_dim]形状优化的维度1求和
     
-    参数:
-        input: 输入张量，形状为[seq_len, num_heads, feat_dim]
-        keepdim: 是否保留归约维度
-        dtype: 输出数据类型(可选)
+#     参数:
+#         input: 输入张量，形状为[seq_len, num_heads, feat_dim]
+#         keepdim: 是否保留归约维度
+#         dtype: 输出数据类型(可选)
     
-    返回:
-        归约后的张量，形状为:
-            keepdim=True: [seq_len, 1, feat_dim]
-            keepdim=False: [seq_len, feat_dim]
-    """
-    if input.dim() != 3:
-        return
-    assert input.dim() == 3, "输入张量必须是3维"
-    seq_len, num_heads, feat_dim = input.shape
+#     返回:
+#         归约后的张量，形状为:
+#             keepdim=True: [seq_len, 1, feat_dim]
+#             keepdim=False: [seq_len, feat_dim]
+#     """
+#     if input.dim() != 3:
+#         return
+#     assert input.dim() == 3, "输入张量必须是3维"
+#     seq_len, num_heads, feat_dim = input.shape
     
-    # 准备输出张量
-    output_shape = (seq_len, feat_dim) if not keepdim else (seq_len, 1, feat_dim)
-    output_dtype = dtype if dtype is not None else input.dtype
-    output = torch.empty(output_shape, device=input.device, dtype=output_dtype)
+#     # 准备输出张量
+#     output_shape = (seq_len, feat_dim) if not keepdim else (seq_len, 1, feat_dim)
+#     output_dtype = dtype if dtype is not None else input.dtype
+#     output = torch.empty(output_shape, device=input.device, dtype=output_dtype)
     
-    # 确定Triton数据类型
-    if input.dtype == torch.float16:
-        tl_dtype = tl.float16
-    elif input.dtype == torch.float32:
-        tl_dtype = tl.float32
-    elif input.dtype == torch.bfloat16:
-        tl_dtype = tl.bfloat16
-    else:
-        raise ValueError(f"不支持的数据类型: {input.dtype}")
+#     # 确定Triton数据类型
+#     if input.dtype == torch.float16:
+#         tl_dtype = tl.float16
+#     elif input.dtype == torch.float32:
+#         tl_dtype = tl.float32
+#     elif input.dtype == torch.bfloat16:
+#         tl_dtype = tl.bfloat16
+#     else:
+#         raise ValueError(f"不支持的数据类型: {input.dtype}")
     
-    # 获取内存布局信息
-    if input.is_contiguous():
-        input_stride_seq = input.stride(0)
-        input_stride_head = input.stride(1)
-        input_stride_feat = input.stride(2)
-    else:
-        # 对于非连续输入，创建连续视图
-        input = input.contiguous()
-        input_stride_seq = input.stride(0)
-        input_stride_head = input.stride(1)
-        input_stride_feat = input.stride(2)
+#     # 获取内存布局信息
+#     if input.is_contiguous():
+#         input_stride_seq = input.stride(0)
+#         input_stride_head = input.stride(1)
+#         input_stride_feat = input.stride(2)
+#     else:
+#         # 对于非连续输入，创建连续视图
+#         input = input.contiguous()
+#         input_stride_seq = input.stride(0)
+#         input_stride_head = input.stride(1)
+#         input_stride_feat = input.stride(2)
     
-    if output.is_contiguous():
-        output_stride_seq = output.stride(0)
-        if keepdim:
-            output_stride_feat = output.stride(2)
-        else:
-            output_stride_feat = output.stride(1)
-    else:
-        # 对于非连续输出，创建连续视图
-        output = output.contiguous()
-        output_stride_seq = output.stride(0)
-        if keepdim:
-            output_stride_feat = output.stride(2)
-        else:
-            output_stride_feat = output.stride(1)
+#     if output.is_contiguous():
+#         output_stride_seq = output.stride(0)
+#         if keepdim:
+#             output_stride_feat = output.stride(2)
+#         else:
+#             output_stride_feat = output.stride(1)
+#     else:
+#         # 对于非连续输出，创建连续视图
+#         output = output.contiguous()
+#         output_stride_seq = output.stride(0)
+#         if keepdim:
+#             output_stride_feat = output.stride(2)
+#         else:
+#             output_stride_feat = output.stride(1)
     
-    # 配置内核参数
-    # 针对A100/H100优化
-    BLOCK_SEQ = 32  # 每个程序处理的序列长度块
-    BLOCK_FEAT = 128  # 每个程序处理的特征维度块
+#     # 配置内核参数
+#     # 针对A100/H100优化
+#     BLOCK_SEQ = 32  # 每个程序处理的序列长度块
+#     BLOCK_FEAT = 128  # 每个程序处理的特征维度块
     
-    # 计算网格大小
-    grid_seq = triton.cdiv(seq_len, BLOCK_SEQ)
-    grid_feat = triton.cdiv(feat_dim, BLOCK_FEAT)
-    grid = (grid_seq, grid_feat)
+#     # 计算网格大小
+#     grid_seq = triton.cdiv(seq_len, BLOCK_SEQ)
+#     grid_feat = triton.cdiv(feat_dim, BLOCK_FEAT)
+#     grid = (grid_seq, grid_feat)
     
-    # 启动内核
-    sum_dim1_kernel[grid](
-        input, output,
-        # 张量元数据
-        seq_len, num_heads, feat_dim,
-        # 内存布局
-        input_stride_seq, input_stride_head, input_stride_feat,
-        output_stride_seq, output_stride_feat,
-        # 内核配置
-        BLOCK_SEQ=BLOCK_SEQ,
-        BLOCK_FEAT=BLOCK_FEAT,
-        DTYPE=tl_dtype
-    )
+#     # 启动内核
+#     sum_dim1_kernel[grid](
+#         input, output,
+#         # 张量元数据
+#         seq_len, num_heads, feat_dim,
+#         # 内存布局
+#         input_stride_seq, input_stride_head, input_stride_feat,
+#         output_stride_seq, output_stride_feat,
+#         # 内核配置
+#         BLOCK_SEQ=BLOCK_SEQ,
+#         BLOCK_FEAT=BLOCK_FEAT,
+#         DTYPE=tl_dtype
+#     )
     
-    return output
+#     return output
 
 
 
@@ -328,42 +328,8 @@ def sum_out(inp, *, dtype=None, out):
     return out
 
 
-# def sum_dim(inp, dim=None, keepdim=False, *, dtype=None):
-#     logger.debug("GEMS SUM DIM")
-#     if dtype is None:
-#         dtype = inp.dtype
-#         if dtype is torch.bool:
-#             dtype = torch.int64
-
-#     if dim == []:
-#         if not keepdim:
-#             return sum(inp, dtype=dtype)
-#         else:
-#             dim_num = inp.ndim
-#             return torch.reshape(sum(inp, dtype=dtype), [1] * dim_num)
-
-#     shape = list(inp.shape)
-#     dim = [d % inp.ndim for d in dim]
-#     inp = dim_compress(inp, dim)
-#     N = 1
-#     for i in dim:
-#         N *= shape[i]
-#         shape[i] = 1
-#     M = inp.numel() // N
-
-#     out = torch.empty(shape, dtype=dtype, device=inp.device)
-
-#     grid = lambda meta: (triton.cdiv(M, meta["BLOCK_M"]),)
-#     with torch_device_fn.device(inp.device):
-#         sum_kernel[grid](inp, out, M, N)
-#     if not keepdim:
-#         out = out.squeeze(dim=dim)
-#     return out
-
-
-def sum_dim_out(inp, dim=None, keepdim=False, *, dtype=None, out):
-    logger.debug("GEMS SUM_DIM_OUT")
-    # print(f"sum_dim_out: {inp.shape}, {inp.dtype}, {dim}, {keepdim}, {dtype}, {out.shape}")
+def sum_dim(inp, dim=None, keepdim=False, *, dtype=None):
+    logger.debug("GEMS SUM DIM")
     if dtype is None:
         dtype = inp.dtype
         if dtype is torch.bool:
@@ -371,10 +337,10 @@ def sum_dim_out(inp, dim=None, keepdim=False, *, dtype=None, out):
 
     if dim == []:
         if not keepdim:
-            return sum_out(inp, dtype=dtype, out=out)
+            return sum(inp, dtype=dtype)
         else:
             dim_num = inp.ndim
-            return torch.reshape(sum_out(inp, dtype=dtype, out=out), [1] * dim_num)
+            return torch.reshape(sum(inp, dtype=dtype), [1] * dim_num)
 
     shape = list(inp.shape)
     dim = [d % inp.ndim for d in dim]
@@ -391,7 +357,7 @@ def sum_dim_out(inp, dim=None, keepdim=False, *, dtype=None, out):
     with torch_device_fn.device(inp.device):
         sum_kernel[grid](inp, out, M, N)
     if not keepdim:
-        out.squeeze_(dim=dim)
+        out = out.squeeze(dim=dim)
     return out
 
 

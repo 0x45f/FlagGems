@@ -50,8 +50,11 @@ def generate_index_kernel(
     inp_rank, indices_len, index_rank, kernel_name: str, code: IndentedBuffer
 ):
     code.writeline("@libentry()")
+    # code.writeline(
+    #     '@triton.autotune(configs=runtime.get_tuned_config("index"), key=["M", "N"], restore_value=["input_ptr"])'
+    # )
     code.writeline(
-        '@triton.autotune(configs=runtime.get_tuned_config("index"), key=["M", "N"], restore_value=["input_ptr"])'
+        '@triton.heuristics(values={"BLOCK_SIZE0": lambda args: 2, "BLOCK_SIZE1": lambda args: 2048,})'
     )
     code.writeline("@triton.jit")
     code.writeline(f"def {kernel_name}(")

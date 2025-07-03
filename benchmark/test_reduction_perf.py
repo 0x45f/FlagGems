@@ -33,13 +33,14 @@ class UnaryReductionBenchmark(Benchmark):
         return io_amount * 1e-9 / (latency * 1e-3)
 
     def set_more_shapes(self):
-        more_shapes_1d = [
-            (1025 * 1024,),
-            (1024 * 1024 * 1024,),
-        ]
-        more_shapes_2d = [(1024, 2**i) for i in range(0, 21, 4)]
-        more_shapes_3d = [(64, 2**i, 64) for i in range(0, 15, 4)]
-        return more_shapes_1d + more_shapes_2d + more_shapes_3d
+        # more_shapes_1d = [
+        #     (1025 * 1024,),
+        #     (1024 * 1024 * 1024,),
+        # ]
+        # more_shapes_2d = [(1024, 2**i) for i in range(0, 21, 4)]
+        # more_shapes_3d = [(64, 2**i, 64) for i in range(0, 15, 4)]
+        # return more_shapes_1d + more_shapes_2d + more_shapes_3d
+        return [(1, 8, 2048), (48, 8, 2048), (15970, 8, 2048), (1000, 8, 2048), (932, 8, 2048), (799, 8, 2048), (700, 8, 2048), (622, 8, 2048), (847, 8, 2048), (16384, 8, 2048), (378, 8, 2048), (300, 8, 2048), (201, 8, 2048), (68, 8, 2048), ]
 
     def get_input_iter(self, cur_dtype) -> Generator:
         for shape in self.shapes:
@@ -67,7 +68,7 @@ forward_operations = [
     ("min", torch.min, FLOAT_DTYPES),
     ("prod", torch.prod, FLOAT_DTYPES),
     ("softmax", torch.nn.functional.softmax, FLOAT_DTYPES),
-    ("sum", torch.sum, FLOAT_DTYPES),
+    ("sum", torch.sum, [torch.bfloat16, ]),
     ("var_mean", torch.var_mean, FLOAT_DTYPES),
 ]
 

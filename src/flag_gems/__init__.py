@@ -72,7 +72,43 @@ def enable(
             ("constant_pad_nd", constant_pad_nd, Autograd.disable),
 
             ("cummin", cummin, Autograd.disable),
-
+            ("cummax", cummax, Autograd.disable),
+            ("div.Tensor", true_divide, Autograd.disable),
+            ("div_.Tensor", true_divide_, Autograd.disable),
+            ("div.Scalar", true_divide, Autograd.disable),
+            ("div_.Scalar", true_divide_, Autograd.disable),
+            ("div.Tensor_mode", div_mode, Autograd.disable),
+            ("div_.Tensor_mode", div_mode_, Autograd.disable),
+            ("div.Scalar_mode", div_mode, Autograd.disable),
+            ("div_.Scalar_mode", div_mode_, Autograd.disable),
+            (
+                "divide.Tensor",
+                true_divide,
+                Autograd.disable,
+            ),  # divide, an alias for div
+            (
+                "divide_.Tensor",
+                true_divide_,
+                Autograd.disable,
+            ),  # divide, an alias for div
+            ("divide.Scalar", true_divide, Autograd.disable),
+            ("divide_.Scalar", true_divide_, Autograd.disable),
+            ("divide.Tensor_mode", div_mode, Autograd.disable),
+            ("divide_.Tensor_mode", div_mode_, Autograd.disable),
+            ("divide.Scalar_mode", div_mode, Autograd.disable),
+            ("divide_.Scalar_mode", div_mode_, Autograd.disable),
+            (
+                "true_divide.Tensor",
+                true_divide,
+                Autograd.disable,
+            ),  # true_divide, an alias for div
+            (
+                "true_divide_.Tensor",
+                true_divide_,
+                Autograd.disable,
+            ),  # true_divide, an alias for div
+            ("true_divide.Scalar", true_divide, Autograd.disable),
+            ("true_divide_.Scalar", true_divide_, Autograd.disable),
             ("floor_divide", floor_divide, Autograd.disable),
             ("floor_divide_.Tensor", floor_divide_, Autograd.disable),
             ("floor_divide.Scalar", floor_divide, Autograd.disable),
@@ -140,8 +176,9 @@ def enable(
             ("uniform_", uniform_, Autograd.disable),
             ("mean", mean, Autograd.disable),
             ("mean.dim", mean_dim, Autograd.disable),
-
-            
+            ("mm", mm, Autograd.disable),
+            ("mm.out", mm_out, Autograd.disable),
+            ("mul.Tensor", mul, Autograd.disable),
             ("mul_.Tensor", mul_, Autograd.disable),
             ("multinomial", multinomial, Autograd.disable),
             ("mv", mv, Autograd.disable),
@@ -189,11 +226,12 @@ def enable(
             ("prod", prod, Autograd.disable),
             ("prod.dim_int", prod_dim, Autograd.disable),
             ("sum", sum, Autograd.disable),
+            ("sum.out", sum_out, Autograd.disable),
             ("sum.dim_IntList", sum_dim, Autograd.disable),
-            
+            ("sum.IntList_out", sum_dim_out, Autograd.disable),
             (
-                "scaled_dot_product_attention",
-                scaled_dot_product_attention,
+                "_flash_attention_forward",
+                flash_attention_forward,
                 Autograd.disable,
             ),
             ("all", all, Autograd.disable),

@@ -1,4 +1,5 @@
 import builtins
+import hashlib
 import inspect
 import logging
 import math
@@ -12,8 +13,9 @@ from typing import Dict, Optional
 
 import triton
 
-from .. import runtime
-from ..runtime import torch_device_fn
+from flag_gems import runtime
+from flag_gems.runtime import torch_device_fn
+
 from .code_cache import config_cache_dir
 
 logger = logging.getLogger(__name__)
@@ -29,6 +31,19 @@ ATTRS = {
 }
 version = triton.__version__.split(".")
 major_version, minor_version = eval(version[0]), eval(version[1])
+
+
+def get_kernel_hash(func, configs):
+    if hasattr(func, "fn"):
+        original_func = func.fn
+    else:
+        original_func = func
+
+    source_code = inspect.getsource(original_func)
+    config_strs = [str(config) for config in configs]
+    combined_content = f"{source_code}{config_strs}"
+    return hashlib.md5(combined_content.encode("utf-8")).hexdigest()[:8]
+
 
 if major_version == 2:
 
@@ -156,7 +171,6 @@ class LibTuner(triton.runtime.Autotuner):
         use_cuda_graph=False,
         do_bench=None,
         strategy=None,
-        share=None,
     ):
         # NOTE(zhengyang): See discussion in https://github.com/triton-lang/triton/pull/4496
         if major_version == 2 or (major_version == 3 and minor_version <= 1):
@@ -197,8 +211,10 @@ class LibTuner(triton.runtime.Autotuner):
         self.__name__ = self.base_fn.__name__
         self.keys = key
         self.strategy = strategy
-        self.share = share
-        self.cache = libcache[share] if share else libcache[self.__name__]
+        self.kernel_hash = get_kernel_hash(self.base_fn, self.configs)
+        # Use table name with hash instead of hash in key
+        self.table_name = f"{self.__name__}_{self.kernel_hash}"
+        self.cache = libcache[self.table_name]
         if strategy:
             assert len(self.strategy) == len(self.keys), "Invalid number of strategies"
 
@@ -278,7 +294,6 @@ def libtuner(
     use_cuda_graph=False,
     do_bench=None,
     strategy=None,
-    share=None,
 ):
     """
     Decorator for triton library autotuner.
@@ -300,7 +315,6 @@ def libtuner(
             use_cuda_graph=use_cuda_graph,
             do_bench=do_bench,
             strategy=strategy,
-            share=share,
         )
 
     return decorator

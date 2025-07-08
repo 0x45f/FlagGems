@@ -4,11 +4,10 @@ import torch
 import triton
 import triton.language as tl
 
+from flag_gems import runtime
+from flag_gems.ops.flash_api import mha_fwd, mha_varlan_fwd
+from flag_gems.ops.flash_kernel import keep
 from flag_gems.runtime import torch_device_fn
-
-from .. import runtime
-from .flash_api import mha_fwd, mha_varlan_fwd
-from .flash_kernel import keep
 
 logger = logging.getLogger(__name__)
 
@@ -583,8 +582,6 @@ def flash_attn_varlen_func(
     dummy_cu_seqlens_k = torch.empty_like(cu_seqlens_q)
 
     assert fa_version == 2, "Only FA2 is implemented."
-
-    out = torch.empty_like(q)
 
     out, q, k, v, softmax_lse, *_ = mha_varlan_fwd(
         q,

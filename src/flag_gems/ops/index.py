@@ -50,7 +50,7 @@ def generate_index_kernel(
 ):
     code.writeline("@libentry()")
     # code.writeline(
-    #     '@libtuner(configs=runtime.get_tuned_config("index"), key=["M", "N"], restore_value=["input_ptr"])'
+    #     '@libtuner(configs=runtime.get_tuned_config("index"), key=["M", "N"], restore_value=["input_ptr"], strategy=["log", "log"])'
     # )
     code.writeline(
         '@triton.heuristics(values={"BLOCK_SIZE0": lambda args: 2, "BLOCK_SIZE1": lambda args: 2048,})'

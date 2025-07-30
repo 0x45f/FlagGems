@@ -24,16 +24,13 @@ def prev_multiple_of(a, b):
 #     key=["M", "N", "K"],
 #     strategy=["log", "log", "log"],
 # )
-# @triton.heuristics(runtime.get_heuristic_config("mm"))
 @triton.heuristics(
     values={
         "BLOCK_M": lambda args: 128,
         "BLOCK_N": lambda args: 256,
         "BLOCK_K": lambda args: 32,
-        "SPLIT_K": lambda args: 1,
         "num_stages": lambda args: 3,
         "num_warps": lambda args: 8,
-        "EVEN_K": lambda args: args["K"] % (args["BLOCK_K"] * args["SPLIT_K"]) == 0,
     }
 )
 @triton.jit

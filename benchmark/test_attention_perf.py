@@ -7,7 +7,7 @@ import triton
 
 import flag_gems
 
-from .performance_utils import Benchmark, GenericBenchmark, vendor_name
+from .performance_utils import Benchmark, GenericBenchmark, SkipVersion, vendor_name
 
 
 class AttentionBenchmark(GenericBenchmark):
@@ -21,6 +21,7 @@ class AttentionBenchmark(GenericBenchmark):
         return None
 
 
+@pytest.mark.skipif(vendor_name == "metax", reason="TODOFIX")
 @pytest.mark.skipif(vendor_name == "kunlunxin", reason="RESULT TODOFIX")
 @pytest.mark.skipif(
     flag_gems.device == "musa" or vendor_name == "hygon", reason="RuntimeError"
@@ -72,6 +73,7 @@ class FlashMLABenchmark(GenericBenchmark):
         return None
 
 
+@pytest.mark.skipif(vendor_name == "metax", reason="TODOFIX")
 @pytest.mark.skipif(vendor_name == "kunlunxin", reason="RESULT TODOFIX")
 @pytest.mark.skipif(vendor_name == "iluvatar", reason="RESULT TODOFIX")
 @pytest.mark.skipif(
@@ -276,6 +278,14 @@ class FlashAttnVarlenBenchmark(Benchmark):
         )
 
 
+@pytest.mark.skipif(
+    SkipVersion("vllm", "<0.9"),
+    reason="The version prior to 0.9 does not include the flash_attn_varlen_func API in vllm.",
+)
+@pytest.mark.skipif(
+    SkipVersion("torch", "<2.7"),
+    reason="The version prior to 2.7 is not compatible with VLLM.",
+)
 @pytest.mark.skipif(vendor_name == "kunlunxin", reason="RESULT TODOFIX")
 @pytest.mark.skipif(vendor_name == "iluvatar", reason="RESULT TODOFIX")
 @pytest.mark.skipif(

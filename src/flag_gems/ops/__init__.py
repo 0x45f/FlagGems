@@ -1,5 +1,6 @@
 from flag_gems.ops.abs import abs, abs_
 from flag_gems.ops.add import add, add_
+from flag_gems.ops.addcmul import addcmul
 from flag_gems.ops.addmm import addmm
 from flag_gems.ops.all import all, all_dim, all_dims
 from flag_gems.ops.amax import amax
@@ -72,12 +73,13 @@ from flag_gems.ops.full_like import full_like
 from flag_gems.ops.gather import gather, gather_backward
 from flag_gems.ops.ge import ge, ge_scalar
 from flag_gems.ops.gelu import gelu, gelu_, gelu_backward
+from flag_gems.ops.get_scheduler_metadata import get_scheduler_metadata
 from flag_gems.ops.glu import glu, glu_backward
 from flag_gems.ops.groupnorm import group_norm, group_norm_backward
 from flag_gems.ops.gt import gt, gt_scalar
 from flag_gems.ops.hstack import hstack
 from flag_gems.ops.index import index
-from flag_gems.ops.index_add import index_add
+from flag_gems.ops.index_add import index_add, index_add_
 from flag_gems.ops.index_put import index_put, index_put_
 from flag_gems.ops.index_select import index_select
 from flag_gems.ops.isclose import allclose, isclose
@@ -162,6 +164,7 @@ from flag_gems.ops.silu import silu, silu_, silu_backward
 from flag_gems.ops.sin import sin, sin_
 from flag_gems.ops.slice_scatter import slice_scatter
 from flag_gems.ops.softmax import softmax, softmax_backward
+from flag_gems.ops.softplus import softplus
 from flag_gems.ops.sort import sort, sort_stable
 from flag_gems.ops.sqrt import sqrt, sqrt_
 from flag_gems.ops.stack import stack
@@ -298,6 +301,7 @@ __all__ = [
     "hstack",
     "index",
     "index_add",
+    "index_add_",
     "index_put",
     "index_put_",
     "index_select",
@@ -379,6 +383,8 @@ __all__ = [
     "reciprocal_",
     "relu",
     "relu_",
+    "addcmul",
+    "softplus",
     "remainder",
     "remainder_",
     "repeat",
@@ -441,4 +447,5 @@ __all__ = [
     "where_self_out",
     "zeros",
     "zeros_like",
+    "get_scheduler_metadata",
 ]

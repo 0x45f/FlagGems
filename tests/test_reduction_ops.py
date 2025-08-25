@@ -6,6 +6,7 @@ import pytest
 import torch
 
 import flag_gems
+from flag_gems import topk_softmax
 
 from .accuracy_utils import (
     CONTIGUOUS_SHAPE_STRIDES_2D,
@@ -120,6 +121,7 @@ def test_accuracy_argmin(shape, dim, keepdim, dtype):
     gems_assert_equal(res_out, ref_out)
 
 
+@pytest.mark.skipif(flag_gems.vendor_name == "mthreads", reason="RandomError")
 @pytest.mark.cross_entropy_loss
 @pytest.mark.parametrize("label_smoothing, ignore_index, shape", SMOOTH_IGNORE_SHAPE)
 @pytest.mark.parametrize("reduction", CROSS_ENTROPY_LOSS_REDUCTION)
@@ -169,6 +171,7 @@ def test_accuracy_cross_entropy_loss_indices(
     gems_assert_close(res_in_grad, ref_in_grad, dtype, reduce_dim=shape[dim])
 
 
+@pytest.mark.skipif(flag_gems.vendor_name == "mthreads", reason="RandomError")
 @pytest.mark.cross_entropy_loss
 @pytest.mark.parametrize("label_smoothing, shape", SMOOTH_SHAPE)
 @pytest.mark.parametrize("reduction", CROSS_ENTROPY_LOSS_REDUCTION)
@@ -1018,6 +1021,31 @@ def test_accuracy_index_add(shape, dim, dtype):
     gems_assert_close(res_out, ref_out, dtype=dtype, reduce_dim=dim)
 
 
+@pytest.mark.index_add_
+@pytest.mark.parametrize("shape", REDUCTION_SHAPES)
+@pytest.mark.parametrize("dim", DIM_LIST)
+@pytest.mark.parametrize("dtype", [torch.float16, torch.float32])
+def test_accuracy_index_add_(shape, dim, dtype):
+    inp = torch.randn(shape, dtype=dtype, device=flag_gems.device)
+
+    src_shape = list(inp.shape)
+    index_max = src_shape[dim]
+    index_len = index_max
+    index = torch.randperm(index_len, device=flag_gems.device)
+    src_shape[dim] = index_len
+    src = torch.randn(src_shape, dtype=dtype, device=flag_gems.device)
+    alpha = 2
+
+    ref_inp = to_reference(inp)
+    ref_src = to_reference(src)
+    ref_index = to_reference(index)
+    ref_inp.index_add_(dim, ref_index, ref_src, alpha=alpha)
+    with flag_gems.use_gems():
+        inp.index_add_(dim, index, src, alpha=alpha)
+
+    gems_assert_close(inp, ref_inp, dtype=dtype, reduce_dim=dim)
+
+
 @pytest.mark.index_select
 @pytest.mark.parametrize("shape", REDUCTION_SHAPES)
 @pytest.mark.parametrize("dim", DIM_LIST)
@@ -1369,6 +1397,9 @@ def test_index_put__acc_true(input_shape, indices_shape, values_shape, dtype):
     if flag_gems.vendor_name == "kunlunxin":
         torch.manual_seed(0)
         torch.cuda.manual_seed_all(0)
+    if flag_gems.vendor_name == "mthreads":
+        torch.manual_seed(0)
+        torch.musa.manual_seed_all(0)
     if flag_gems.vendor_name == "cambricon":
         torch.manual_seed(42)
         torch.mlu.manual_seed_all(42)
@@ -1432,3 +1463,59 @@ def test_accuracy_mse_loss(shape, dtype, reduction):
     with flag_gems.use_gems():
         res_out = torch.nn.functional.mse_loss(inp, target, reduction=reduction)
     gems_assert_close(res_out, ref_out, dtype, equal_nan=True, reduce_dim=shape[dim])
+
+
+def topk_softmax_torch_reference(gating_output: torch.Tensor, topk: int):
+    probs = torch.softmax(gating_output, dim=-1)
+    topk_values, topk_indices = torch.topk(
+        probs, k=topk, dim=-1, largest=True, sorted=True
+    )
+    num_tokens = gating_output.shape[0]
+    source_rows = torch.arange(topk, device=gating_output.device).view(
+        1, -1
+    ) * num_tokens + torch.arange(num_tokens, device=gating_output.device).view(-1, 1)
+    return topk_values, topk_indices, source_rows
+
+
+@pytest.mark.topk_softmax
+@pytest.mark.parametrize("index_dtype", [torch.int32, torch.int64, torch.uint32])
+@pytest.mark.parametrize(
+    "num_tokens, num_experts, topk",
+    [
+        (1, 4, 2),
+        (4, 8, 2),
+        (8, 16, 4),
+        (32, 64, 8),
+        (128, 128, 16),
+        (500, 255, 30),
+        (512, 256, 32),
+        (1024, 512, 32),
+    ],
+)
+def test_topk_softmax(num_tokens, num_experts, topk, index_dtype):
+    torch.manual_seed(42)
+    device = flag_gems.device
+
+    gating_output = torch.randn(
+        num_tokens, num_experts, dtype=torch.float32, device=device
+    )
+
+    topk_weights = torch.empty((num_tokens, topk), device=device, dtype=torch.float32)
+    topk_indices = torch.empty((num_tokens, topk), device=device, dtype=index_dtype)
+    token_expert_indices = torch.empty(
+        (num_tokens, topk), device=device, dtype=torch.int32
+    )
+
+    topk_softmax(topk_weights, topk_indices, token_expert_indices, gating_output)
+
+    ref_weights, ref_indices, ref_source_rows = topk_softmax_torch_reference(
+        gating_output, topk
+    )
+
+    assert topk_weights.shape == (num_tokens, topk)
+    assert topk_indices.shape == (num_tokens, topk)
+    assert token_expert_indices.shape == (num_tokens, topk)
+
+    assert torch.allclose(topk_weights, ref_weights, atol=1e-5)
+    assert torch.equal(topk_indices.cpu(), ref_indices.to(index_dtype).cpu())
+    assert torch.equal(token_expert_indices.cpu(), ref_source_rows.cpu())

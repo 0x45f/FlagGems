@@ -26,7 +26,7 @@ jobs:
           path: benchmark
 
       - name: Install and run benchmark
-        shell: bash
+        shell: zsh
         run: |
           source tools/run_command.sh
           run_command source activate base

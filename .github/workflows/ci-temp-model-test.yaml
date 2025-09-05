@@ -30,6 +30,7 @@ jobs:
         run: |
           source tools/run_command.sh
           run_command bash ~/.bashrc
+          run_command conda init bash
           run_command conda activate torchbenchmark
           run_command pip install -e .
           run_command cd benchmark

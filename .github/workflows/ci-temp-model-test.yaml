@@ -33,5 +33,5 @@ jobs:
           run_command conda init bash
           run_command conda activate wz-torch-bench
           run_command pip install -e .
-          run_command python benchmark/install.py
+          run_command python benchmark/install.py models resnet50
           run_command python benchmark/run_benchmark.py test_bench --accuracy --device cuda --test eval --output output.json --models resnet50

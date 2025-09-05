@@ -1,4 +1,4 @@
-name: ci-temp-model-test
+name: ci-temp-test-model
 
 on:
   push:
@@ -6,11 +6,14 @@ on:
   pull_request:
     branches: [ "master" ]
 
+env:
+  CUDA_VISIBLE_DEVICES: 7
+
 jobs:
-  ci-temp-model-test:
-    runs-on: ci-temp-model-test
+  ci-temp-test-model:
+    runs-on: ci-temp-test-model
     concurrency:
-      group: ci-temp-model-test-${{ github.event.pull_request.number || github.ref }}
+      group: ci-temp-test-model-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
     steps:
       - name: Checkout flaggems
@@ -21,3 +24,14 @@ jobs:
         with:
           repository: pytorch/benchmark
           path: benchmark
+
+      - name: Install and run benchmark
+        shell: bash
+        run: |
+          source tools/run_command.sh
+          run_command conda activate torchbenchmark
+          run_command pip install -e .
+          run_command cd benchmark
+          run_command python install.py
+          run_command python run_benchmark.py test_bench --accuracy --device cuda --test eval --output output.json --models resnet50
+          run_command cd ..

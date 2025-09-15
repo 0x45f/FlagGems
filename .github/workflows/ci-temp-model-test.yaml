@@ -33,5 +33,10 @@ jobs:
           run_command conda init bash
           run_command conda activate wz-torch-bench
           run_command pip install -e .
+          run_command sed -i '/self\.worker\.run("import torch")/a\        self.worker.run(\
+            """\
+            import flag_gems\
+            flag_gems.enable(record=False, once=True, path='"'"'benchmark/oplist.log'"'"')""")' benchmark/torchbenchmark/__init__.py
           run_command python benchmark/install.py models resnet50
           run_command python benchmark/run_benchmark.py test_bench --accuracy --device cuda --test eval --output output.json --models resnet50
+          run_command sed -i '/self\.worker\.run($/,/^[[:space:]]*flag_gems\.enable.*oplist\.log.*""")/d' benchmark/torchbenchmark/__init__.py
